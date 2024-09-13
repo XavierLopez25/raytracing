@@ -1,10 +1,7 @@
-use crate::{sfx, trigger_win_condition};
 use gilrs::{Axis, Button, EventType, Gilrs};
 use minifb::{Key, MouseMode, Window, WindowOptions};
 use nalgebra_glm::{length, rotate_vec2, Vec2};
 use std::f32::consts::PI;
-
-use crate::maze::{is_blocked, is_goal};
 
 pub struct Player {
     pub pos: Vec2,
@@ -48,41 +45,11 @@ pub fn process_events(
     if window.is_key_down(Key::W) {
         let move_vec = forward * MOVE_SPEED_KEYBOARD;
         let new_pos = player.pos + move_vec;
-        if !is_blocked(
-            maze,
-            new_pos.x as usize / block_size,
-            new_pos.y as usize / block_size,
-        ) {
-            player.pos = new_pos;
-            moved = true;
-        }
-        if is_goal(
-            maze,
-            new_pos.x as usize / block_size,
-            new_pos.y as usize / block_size,
-        ) {
-            trigger_win_condition();
-        }
     }
 
     if window.is_key_down(Key::S) {
         let move_vec = forward * -MOVE_SPEED_KEYBOARD;
         let new_pos = player.pos + move_vec;
-        if !is_blocked(
-            maze,
-            new_pos.x as usize / block_size,
-            new_pos.y as usize / block_size,
-        ) {
-            player.pos = new_pos;
-            moved = true;
-        }
-        if is_goal(
-            maze,
-            new_pos.x as usize / block_size,
-            new_pos.y as usize / block_size,
-        ) {
-            trigger_win_condition();
-        }
     }
 
     if window.is_key_down(Key::Left) {
@@ -96,41 +63,11 @@ pub fn process_events(
     if window.is_key_down(Key::Up) {
         let move_vec = forward * MOVE_SPEED_KEYBOARD;
         let new_pos = player.pos + move_vec;
-        if !is_blocked(
-            maze,
-            new_pos.x as usize / block_size,
-            new_pos.y as usize / block_size,
-        ) {
-            player.pos = new_pos;
-            moved = true;
-        }
-        if is_goal(
-            maze,
-            new_pos.x as usize / block_size,
-            new_pos.y as usize / block_size,
-        ) {
-            trigger_win_condition();
-        }
     }
 
     if window.is_key_down(Key::Down) {
         let move_vec = forward * -MOVE_SPEED_KEYBOARD;
         let new_pos = player.pos + move_vec;
-        if !is_blocked(
-            maze,
-            new_pos.x as usize / block_size,
-            new_pos.y as usize / block_size,
-        ) {
-            player.pos = new_pos;
-            moved = true;
-        }
-        if is_goal(
-            maze,
-            new_pos.x as usize / block_size,
-            new_pos.y as usize / block_size,
-        ) {
-            trigger_win_condition();
-        }
     }
 
     if let Some((mouse_x, _)) = window.get_mouse_pos(MouseMode::Pass) {
@@ -147,40 +84,10 @@ pub fn process_events(
                 Button::DPadUp => {
                     let move_vec = forward * MOVE_SPEED_CONTROLLER;
                     let new_pos = player.pos + move_vec;
-                    if !is_blocked(
-                        maze,
-                        new_pos.x as usize / block_size,
-                        new_pos.y as usize / block_size,
-                    ) {
-                        player.pos = new_pos;
-                        moved = true;
-                    }
-                    if is_goal(
-                        maze,
-                        new_pos.x as usize / block_size,
-                        new_pos.y as usize / block_size,
-                    ) {
-                        trigger_win_condition();
-                    }
                 }
                 Button::DPadDown => {
                     let move_vec = forward * -MOVE_SPEED_CONTROLLER;
                     let new_pos = player.pos + move_vec;
-                    if !is_blocked(
-                        maze,
-                        new_pos.x as usize / block_size,
-                        new_pos.y as usize / block_size,
-                    ) {
-                        player.pos = new_pos;
-                        moved = true;
-                    }
-                    if is_goal(
-                        maze,
-                        new_pos.x as usize / block_size,
-                        new_pos.y as usize / block_size,
-                    ) {
-                        trigger_win_condition();
-                    }
                 }
                 _ => {}
             },
@@ -193,36 +100,9 @@ pub fn process_events(
                 if value > DEAD_ZONE || value < -DEAD_ZONE {
                     let move_vec = forward * (value * MOVE_SPEED_CONTROLLER);
                     let new_pos = player.pos + move_vec;
-                    if !is_blocked(
-                        maze,
-                        new_pos.x as usize / block_size,
-                        new_pos.y as usize / block_size,
-                    ) {
-                        player.pos = new_pos;
-                        moved = true;
-                    }
-                    if is_goal(
-                        maze,
-                        new_pos.x as usize / block_size,
-                        new_pos.y as usize / block_size,
-                    ) {
-                        trigger_win_condition();
-                    }
                 }
             }
             _ => {}
-        }
-    }
-
-    if moved {
-        let distance = nalgebra_glm::distance(&old_pos, &player.pos);
-        unsafe {
-            TOTAL_DISTANCE += distance;
-            if TOTAL_DISTANCE >= DISTANCE_THRESHOLD {
-                if let Ok(_) = sfx::play_footstep_sound(stream_handle) {
-                    TOTAL_DISTANCE = 0.0;
-                }
-            }
         }
     }
 }
