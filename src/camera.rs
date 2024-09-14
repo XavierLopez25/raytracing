@@ -1,11 +1,11 @@
-use nalgebra_glm::{rotate_vec3, Vec3};
+use nalgebra_glm::Vec3;
 use std::f32::consts::PI;
 
 pub struct Camera {
     pub eye: Vec3,
     pub center: Vec3,
     pub up: Vec3,
-    pub has_changed: bool,
+    has_changed: bool,
 }
 
 impl Camera {
@@ -23,7 +23,7 @@ impl Camera {
         let right = forward.cross(&self.up).normalize();
         let up = right.cross(&forward).normalize();
 
-        let rotated = vector.x * right + vector.y * up - vector.z * forward;
+        let rotated = vector.x * right + vector.y * up + -vector.z * forward;
 
         rotated.normalize()
     }
@@ -31,6 +31,7 @@ impl Camera {
     pub fn orbit(&mut self, delta_yaw: f32, delta_pitch: f32) {
         let radius_vector = self.eye - self.center;
         let radius = radius_vector.magnitude();
+
         let current_yaw = radius_vector.z.atan2(radius_vector.x);
 
         let radius_xz =
@@ -51,38 +52,11 @@ impl Camera {
         self.has_changed = true;
     }
 
-    pub fn zoom(&mut self, delta: f32) {
-        let direction = (self.center - self.eye).normalize();
-        self.eye += direction * delta;
-        self.has_changed = true;
-    }
-
-    pub fn move_center(&mut self, direction: Vec3) {
-        let radius_vector = self.center - self.eye;
-        let radius = radius_vector.magnitude();
-
-        // Calculate rotation angles based on input
-        let angle_x = direction.x * 0.05; // Adjust this factor to control rotation speed
-        let angle_y = direction.y * 0.05;
-
-        // Rotate around Y-axis (for left-right movement)
-        let rotated = rotate_vec3(&radius_vector, angle_x, &Vec3::new(0.0, 1.0, 0.0));
-
-        // Rotate around the right vector (for up-down movement)
-        let right = rotated.cross(&self.up).normalize();
-        let final_rotated = rotate_vec3(&rotated, angle_y, &right);
-
-        // Ensure the length of the vector remains constant
-        self.center = self.eye + final_rotated.normalize() * radius;
-        self.has_changed = true;
-    }
-
-    pub fn check_if_changed(&mut self) -> bool {
+    pub fn is_changed(&mut self) -> bool {
         if self.has_changed {
             self.has_changed = false;
-            true
-        } else {
-            false
+            return true;
         }
+        false
     }
 }
