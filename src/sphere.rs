@@ -11,7 +11,7 @@ pub struct Sphere {
 impl RayIntersect for Sphere {
     fn ray_intersect(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect {
         // Vector from the ray origin to the center of the sphere
-        let oc = ray_origin - self.center;
+        let oc = *ray_origin - self.center;
 
         // Coefficients for the quadratic equation
         let a = ray_direction.dot(ray_direction);
@@ -27,11 +27,11 @@ impl RayIntersect for Sphere {
             let t = (-b - discriminant.sqrt()) / (2.0 * a);
             if t > 0.0 {
                 // Compute intersection point, normal at the intersection, and distance from the ray origin
-                //let point = ray_origin + ray_direction * t;
-                //let normal = (point - self.center).normalize();
+                let point = ray_origin + ray_direction * t;
+                let normal = (point - self.center).normalize();
                 let distance = t;
 
-                return Intersect::new(distance, self.material);
+                return Intersect::new(point, normal, distance, self.material);
             }
         }
 
