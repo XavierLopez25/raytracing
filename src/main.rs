@@ -28,6 +28,11 @@ mod light;
 use light::Light;
 
 mod texture;
+use std::sync::Arc;
+use texture::Texture;
+
+mod cube;
+use cube::Cube;
 
 const BIAS: f32 = 0.001;
 const SKYBOX_COLOR: Color = Color::new(69, 142, 228);
@@ -70,7 +75,7 @@ fn refract(incident: &Vec3, normal: &Vec3, eta_t: f32) -> Vec3 {
     }
 }
 
-fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Sphere]) -> f32 {
+fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Cube]) -> f32 {
     let light_dir = (light.position - intersect.point).normalize();
     let light_distance = (light.position - intersect.point).magnitude();
 
@@ -81,7 +86,8 @@ fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Sphere]) -> f32 
         let shadow_intersect = object.ray_intersect(&shadow_ray_origin, &light_dir);
         if shadow_intersect.is_intersecting && shadow_intersect.distance < light_distance {
             let distance_ratio = shadow_intersect.distance / light_distance;
-            shadow_intensity = 1.0 - distance_ratio.powf(2.0).min(1.0);
+            shadow_intensity = (0.50 - distance_ratio.powf(2.0).min(1.0));
+
             break;
         }
     }
@@ -92,7 +98,7 @@ fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Sphere]) -> f32 
 pub fn cast_ray(
     ray_origin: &Vec3,
     ray_direction: &Vec3,
-    objects: &[Sphere],
+    objects: &[Cube],
     light: &Light,
     depth: u32,
 ) -> Color {
@@ -165,7 +171,7 @@ pub fn cast_ray(
         + (refract_color * transparency)
 }
 
-pub fn render(framebuffer: &mut Framebuffer, objects: &[Sphere], camera: &Camera, light: &Light) {
+pub fn render(framebuffer: &mut Framebuffer, objects: &[Cube], camera: &Camera, light: &Light) {
     let width = framebuffer.width as f32;
     let height = framebuffer.height as f32;
     let aspect_ratio = width / height;
@@ -208,7 +214,7 @@ fn main() {
     let mut framebuffer = Framebuffer::new(framebuffer_width, framebuffer_height);
 
     let mut window = Window::new(
-        "Raytracing",
+        "Gráficas - Diorama Minecraft",
         window_width,
         window_height,
         WindowOptions::default(),
@@ -220,9 +226,10 @@ fn main() {
 
     framebuffer.set_background_color(0x333355);
 
-    let rubber = Material::new_with_texture(1.0, [0.9, 0.1, 0.0, 0.0], 0.0);
+    let grass_texture = Arc::new(Texture::new("assets\\grass_signed.png"));
+    let grass = Material::new_with_texture(1.0, [1.0, 0.05, 0.0, 0.0], 0.0, grass_texture);
 
-    let ivory = Material::new(Color::new(100, 100, 80), 50.0, [0.6, 0.3, 0.6, 0.0], 0.0);
+    let ivory: Material = Material::new(Color::new(100, 100, 80), 50.0, [0.6, 0.3, 0.6, 0.0], 0.0);
 
     let glass = Material::new(
         Color::new(255, 255, 255),
@@ -231,23 +238,12 @@ fn main() {
         0.3,
     );
 
-    let objects = [
-        Sphere {
-            center: Vec3::new(-1.0, -1.0, 1.5),
-            radius: 0.5,
-            material: ivory,
-        },
-        Sphere {
-            center: Vec3::new(0.0, 0.0, 0.0),
-            radius: 1.0,
-            material: rubber,
-        },
-        Sphere {
-            center: Vec3::new(-0.3, 0.3, 2.5),
-            radius: 0.5,
-            material: glass,
-        },
-    ];
+    let objects = [Cube {
+        // Base o terreno
+        min: Vec3::new(0.0, 1.0, 0.0),
+        max: Vec3::new(1.0, 2.0, 1.0),
+        material: grass,
+    }];
 
     let mut camera = Camera::new(
         Vec3::new(0.0, 0.0, 5.0),
@@ -255,7 +251,7 @@ fn main() {
         Vec3::new(0.0, 1.0, 0.0),
     );
 
-    let light = Light::new(Vec3::new(0.0, 0.0, 5.0), Color::new(255, 255, 255), 1.0);
+    let light = Light::new(Vec3::new(3.0, -3.0, 3.0), Color::new(255, 255, 255), 1.0);
 
     let rotation_speed = PI / 50.0;
     let movement_speed = 0.1;
@@ -307,10 +303,8 @@ fn main() {
             camera.zoom(-zoom_speed);
         }
 
-        //framebuffer.clear();
-        if camera.is_changed() {
-            render(&mut framebuffer, &objects, &camera, &light);
-        }
+        framebuffer.clear();
+        render(&mut framebuffer, &objects, &mut camera, &light);
 
         window
             .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)
