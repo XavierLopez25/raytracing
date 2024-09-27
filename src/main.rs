@@ -36,6 +36,9 @@ use cube::Cube;
 
 use rayon::prelude::*;
 
+mod block_textures;
+use block_textures::Textures;
+
 const BIAS: f32 = 0.001;
 const SKYBOX_COLOR: Color = Color::new(69, 142, 228);
 
@@ -244,6 +247,8 @@ fn main() {
         0.3,
     );
 
+    let textures = Textures::new();
+
     // Generate a 6x6 grid of grass cubes
     let mut objects = Vec::new();
     for i in 0..6 {
@@ -251,7 +256,7 @@ fn main() {
             objects.push(Cube {
                 min: Vec3::new(i as f32, 0.0, j as f32),
                 max: Vec3::new(i as f32 + 1.0, 1.0, j as f32 + 1.0),
-                material: grass.clone(),
+                material: textures.grass_material.clone(),
             });
         }
     }
