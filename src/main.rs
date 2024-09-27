@@ -244,20 +244,25 @@ fn main() {
         0.3,
     );
 
-    let objects = [Cube {
-        // Base o terreno
-        min: Vec3::new(0.0, 1.0, 0.0),
-        max: Vec3::new(1.0, 2.0, 1.0),
-        material: grass,
-    }];
-
+    // Generate a 6x6 grid of grass cubes
+    let mut objects = Vec::new();
+    for i in 0..6 {
+        for j in 0..6 {
+            objects.push(Cube {
+                min: Vec3::new(i as f32, 0.0, j as f32),
+                max: Vec3::new(i as f32 + 1.0, 1.0, j as f32 + 1.0),
+                material: grass.clone(),
+            });
+        }
+    }
+    // Configuración de la cámara
     let mut camera = Camera::new(
-        Vec3::new(0.0, 0.0, 5.0),
-        Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(0.0, 1.0, 0.0),
+        Vec3::new(-5.0, 5.0, -10.0), // Posición de la cámara ajustada
+        Vec3::new(0.0, 0.0, 0.0),    // Punto hacia el que mira la cámara
+        Vec3::new(0.0, 1.0, 0.0),    // Vector "up" de la cámara
     );
 
-    let light = Light::new(Vec3::new(3.0, -3.0, 3.0), Color::new(255, 255, 255), 1.0);
+    let light = Light::new(Vec3::new(-5.0, 10.0, -10.0), Color::new(255, 255, 255), 1.0);
 
     let rotation_speed = PI / 50.0;
     let movement_speed = 0.1;

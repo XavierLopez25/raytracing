@@ -15,8 +15,8 @@ impl Cube {
         let size = self.max - self.min;
         let local_point = point - self.min;
 
-        let img_width = 375.0;
-        let img_height = 500.0;
+        let img_width = 374.0;
+        let img_height = 499.0;
         let num_columns = 3.0;
         let num_rows = 4.0;
 
@@ -104,23 +104,23 @@ impl RayIntersect for Cube {
 
 fn compute_normal(intersection: &Vec3, min: &Vec3, max: &Vec3) -> Vec3 {
     Vec3::new(
-        if (intersection.x - min.x).abs() < 1e-3 {
+        if (intersection.x - min.x).abs() < 1e-6 {
             -1.0
-        } else if (intersection.x - max.x).abs() < 1e-3 {
+        } else if (intersection.x - max.x).abs() < 1e-6 {
             1.0
         } else {
             0.0
         },
-        if (intersection.y - min.y).abs() < 1e-3 {
+        if (intersection.y - min.y).abs() < 1e-6 {
             -1.0
-        } else if (intersection.y - max.y).abs() < 1e-3 {
+        } else if (intersection.y - max.y).abs() < 1e-6 {
             1.0
         } else {
             0.0
         },
-        if (intersection.z - min.z).abs() < 1e-3 {
+        if (intersection.z - min.z).abs() < 1e-6 {
             -1.0
-        } else if (intersection.z - max.z).abs() < 1e-3 {
+        } else if (intersection.z - max.z).abs() < 1e-6 {
             1.0
         } else {
             0.0
