@@ -80,21 +80,23 @@ fn refract(incident: &Vec3, normal: &Vec3, eta_t: f32) -> Vec3 {
 fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Cube]) -> f32 {
     let light_dir = (light.position - intersect.point).normalize();
     let light_distance = (light.position - intersect.point).magnitude();
-
     let shadow_ray_origin = offset_point(intersect, &light_dir);
-    let mut shadow_intensity = 0.0;
 
-    for object in objects {
-        let shadow_intersect = object.ray_intersect(&shadow_ray_origin, &light_dir);
-        if shadow_intersect.is_intersecting && shadow_intersect.distance < light_distance {
-            let distance_ratio = shadow_intersect.distance / light_distance;
-            shadow_intensity = (0.50 - distance_ratio.powf(2.0).min(1.0));
-
-            break;
-        }
-    }
-
-    shadow_intensity
+    objects
+        .iter()
+        .find_map(|object| {
+            let shadow_intersect = object.ray_intersect(&shadow_ray_origin, &light_dir);
+            if shadow_intersect.is_intersecting && shadow_intersect.distance < light_distance {
+                Some(
+                    0.5 - (shadow_intersect.distance / light_distance)
+                        .powf(2.0)
+                        .min(1.0),
+                )
+            } else {
+                None
+            }
+        })
+        .unwrap_or(0.0)
 }
 
 pub fn cast_ray(
