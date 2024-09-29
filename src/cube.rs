@@ -2,8 +2,6 @@ use crate::material::Material;
 use crate::ray_intersect::{Intersect, RayIntersect};
 use nalgebra_glm::Vec3;
 
-#[derive(Clone)]
-
 pub struct Cube {
     pub min: Vec3,          // La esquina mínima del cubo
     pub max: Vec3,          // La esquina máxima del cubo
@@ -15,8 +13,8 @@ impl Cube {
         let size = self.max - self.min;
         let local_point = point - self.min;
 
-        let img_width = 374.0;
-        let img_height = 499.0;
+        let img_width = 375.0;
+        let img_height = 500.0;
         let num_columns = 3.0;
         let num_rows = 4.0;
 
@@ -71,6 +69,7 @@ impl Cube {
 
 impl RayIntersect for Cube {
     fn ray_intersect(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect {
+        // Calcular el inverso de cada componente del vector de dirección
         let inv_dir = Vec3::new(
             1.0 / ray_direction[0],
             1.0 / ray_direction[1],
@@ -92,7 +91,19 @@ impl RayIntersect for Cube {
 
         if t_enter < t_exit && t_exit > 0.0 {
             let point = ray_origin + ray_direction * t_enter;
-            let normal = compute_normal(&point, &self.min, &self.max);
+            let normal = if (point[0] - self.min[0]).abs() < 1e-3 {
+                Vec3::new(-1.0, 0.0, 0.0)
+            } else if (point[0] - self.max[0]).abs() < 1e-3 {
+                Vec3::new(1.0, 0.0, 0.0)
+            } else if (point[1] - self.min[1]).abs() < 1e-3 {
+                Vec3::new(0.0, -1.0, 0.0)
+            } else if (point[1] - self.max[1]).abs() < 1e-3 {
+                Vec3::new(0.0, 1.0, 0.0)
+            } else if (point[2] - self.min[2]).abs() < 1e-3 {
+                Vec3::new(0.0, 0.0, -1.0)
+            } else {
+                Vec3::new(0.0, 0.0, 1.0)
+            };
 
             let (u, v) = self.get_uv(&point, &normal);
             return Intersect::new(point, normal, t_enter, self.material.clone(), u, v);
@@ -100,30 +111,4 @@ impl RayIntersect for Cube {
 
         Intersect::empty()
     }
-}
-
-fn compute_normal(intersection: &Vec3, min: &Vec3, max: &Vec3) -> Vec3 {
-    Vec3::new(
-        if (intersection.x - min.x).abs() < 1e-6 {
-            -1.0
-        } else if (intersection.x - max.x).abs() < 1e-6 {
-            1.0
-        } else {
-            0.0
-        },
-        if (intersection.y - min.y).abs() < 1e-6 {
-            -1.0
-        } else if (intersection.y - max.y).abs() < 1e-6 {
-            1.0
-        } else {
-            0.0
-        },
-        if (intersection.z - min.z).abs() < 1e-6 {
-            -1.0
-        } else if (intersection.z - max.z).abs() < 1e-6 {
-            1.0
-        } else {
-            0.0
-        },
-    )
 }
