@@ -108,15 +108,34 @@ fn fresnel_schlick(cos_theta: f32, ior: f32) -> f32 {
     r0 + (1.0 - r0) * (1.0 - cos_theta).powi(5)
 }
 
+fn get_skybox_color(direction: &Vec3, skybox_texture: &Texture) -> Color {
+    let normalized_dir = direction.normalize();
+    let u = 0.5 + normalized_dir.x.atan2(normalized_dir.z) / (2.0 * PI);
+    let v = 0.5 - (normalized_dir.y.asin() / PI);
+
+    // Asegurarse de que u y v están dentro del rango [0, 1]
+    let u = u.fract();
+    let v = v.fract();
+
+    // Convertir u y v en índices de píxeles dentro de la textura
+    let tex_width = skybox_texture.width() as f32;
+    let tex_height = skybox_texture.height() as f32;
+    let tex_x = (u * tex_width).floor() as usize;
+    let tex_y = (v * tex_height).floor() as usize;
+
+    skybox_texture.get_color(tex_x, tex_y)
+}
+
 pub fn cast_ray(
     ray_origin: &Vec3,
     ray_direction: &Vec3,
     objects: &[Cube],
     light: &Light,
     depth: u32,
+    textures: &Textures,
 ) -> Color {
     if depth >= 3 {
-        return SKYBOX_COLOR;
+        return get_skybox_color(ray_direction, &textures.skybox_texture);
     }
 
     let mut intersect = Intersect::empty();
@@ -132,7 +151,7 @@ pub fn cast_ray(
     }
 
     if !intersect.is_intersecting {
-        return SKYBOX_COLOR;
+        return get_skybox_color(ray_direction, &textures.skybox_texture);
     }
 
     let light_dir = (light.position - intersect.point).normalize();
@@ -161,7 +180,14 @@ pub fn cast_ray(
     let reflect_color = if intersect.material.albedo[2] > 0.0 {
         let reflect_dir = reflect(ray_direction, &intersect.normal).normalize();
         let reflect_origin = offset_point(&intersect, ray_direction);
-        cast_ray(&reflect_origin, &reflect_dir, objects, light, depth + 1) * fresnel_effect
+        cast_ray(
+            &reflect_origin,
+            &reflect_dir,
+            objects,
+            light,
+            depth + 1,
+            textures,
+        ) * fresnel_effect
     } else {
         Color::black()
     };
@@ -173,7 +199,14 @@ pub fn cast_ray(
             intersect.material.refractive_index,
         );
         let refract_origin = offset_point(&intersect, &refract_dir);
-        cast_ray(&refract_origin, &refract_dir, objects, light, depth + 1) * (1.0 - fresnel_effect)
+        cast_ray(
+            &refract_origin,
+            &refract_dir,
+            objects,
+            light,
+            depth + 1,
+            textures,
+        ) * (1.0 - fresnel_effect)
     } else {
         Color::black()
     };
@@ -181,7 +214,13 @@ pub fn cast_ray(
     diffuse + specular + reflect_color + refract_color
 }
 
-pub fn render(framebuffer: &mut Framebuffer, objects: &[Cube], camera: &Camera, light: &Light) {
+pub fn render(
+    framebuffer: &mut Framebuffer,
+    objects: &[Cube],
+    camera: &Camera,
+    light: &Light,
+    textures: &Textures,
+) {
     let width = framebuffer.width as f32;
     let height = framebuffer.height as f32;
     let aspect_ratio = width / height;
@@ -202,7 +241,8 @@ pub fn render(framebuffer: &mut Framebuffer, objects: &[Cube], camera: &Camera, 
             let screen_y = screen_y * perspective_scale;
             let ray_direction = Vec3::new(screen_x, screen_y, -1.0).normalize();
             let rotated_direction = camera.basis_change(&ray_direction);
-            let pixel_color = cast_ray(&camera.eye, &rotated_direction, objects, light, 0);
+            let pixel_color =
+                cast_ray(&camera.eye, &rotated_direction, objects, light, 0, textures);
             (x, y, pixel_color.to_hex())
         })
         .collect();
@@ -502,7 +542,7 @@ fn main() {
         }
 
         framebuffer.clear();
-        render(&mut framebuffer, &objects, &mut camera, &light);
+        render(&mut framebuffer, &objects, &mut camera, &light, &textures);
 
         window
             .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)

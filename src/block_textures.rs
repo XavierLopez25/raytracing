@@ -14,6 +14,7 @@ pub struct Textures {
     pub shroomlight_material: Material,
     pub smoker_material: Material,
     pub crafting_table_material: Material,
+    pub skybox_texture: Arc<Texture>,
 }
 
 impl Textures {
@@ -66,6 +67,8 @@ impl Textures {
         let smoker_material =
             Material::new_with_texture(1.0, [0.95, 0.1, 0.0, 0.0], 1.2, smoker_texture);
 
+        let skybox_texture = Arc::new(Texture::new("assets/skybox.png")); // Asume que tienes una imagen skybox.png
+
         Self {
             grass_material,
             obsidian_material,
@@ -78,6 +81,7 @@ impl Textures {
             shroomlight_material,
             smoker_material,
             crafting_table_material,
+            skybox_texture,
         }
     }
 }

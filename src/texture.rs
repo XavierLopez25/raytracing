@@ -55,6 +55,14 @@ impl Texture {
             Color::from_hex(0xFF00FF) // Magenta para indicar error de coordenadas
         }
     }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
 }
 
 impl fmt::Debug for Texture {
