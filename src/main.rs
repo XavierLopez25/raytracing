@@ -301,9 +301,97 @@ fn create_player_tools(textures: &Textures) -> Vec<Cube> {
     let wood_row = generate_grid(1, 7, 7.0, 1.0, 0.0, textures.oak_planks_material.clone());
     objects.extend(wood_row);
 
+    objects.push(Cube {
+        min: Vec3::new(7.0, 2.0, 2.0),
+        max: Vec3::new(8.0, 3.0, 3.0),
+        material: textures.smoker_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(7.0, 2.0, 3.0),
+        max: Vec3::new(8.0, 3.0, 4.0),
+        material: textures.crafting_table_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(7.0, 2.0, 4.0),
+        max: Vec3::new(8.0, 3.0, 5.0),
+        material: textures.bookshelf_material.clone(),
+    });
+
     objects
 }
 
+fn create_cactus(textures: &Textures) -> Vec<Cube> {
+    let mut objects = Vec::new();
+
+    objects.push(Cube {
+        min: Vec3::new(2.0, 2.0, 2.0),
+        max: Vec3::new(3.0, 3.0, 3.0),
+        material: textures.sand_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(2.0, 3.0, 2.0),
+        max: Vec3::new(3.0, 4.0, 3.0),
+        material: textures.cactus_material.clone(),
+    });
+
+    objects.push(Cube {
+        min: Vec3::new(3.0, 2.0, 1.0),
+        max: Vec3::new(4.0, 3.0, 2.0),
+        material: textures.sand_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(3.0, 3.0, 1.0),
+        max: Vec3::new(4.0, 4.0, 2.0),
+        material: textures.cactus_material.clone(),
+    });
+
+    objects
+}
+
+fn create_tree(textures: &Textures) -> Vec<Cube> {
+    let mut objects = Vec::new();
+
+    objects.push(Cube {
+        min: Vec3::new(1.0, 2.0, 5.0),
+        max: Vec3::new(2.0, 3.0, 6.0),
+        material: textures.oak_log_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(1.0, 3.0, 5.0),
+        max: Vec3::new(2.0, 4.0, 6.0),
+        material: textures.oak_log_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(1.0, 4.0, 5.0),
+        max: Vec3::new(2.0, 5.0, 6.0),
+        material: textures.oak_log_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(1.0, 5.0, 5.0),
+        max: Vec3::new(2.0, 6.0, 6.0),
+        material: textures.oak_log_material.clone(),
+    });
+
+    objects
+}
+
+fn create_shroomlights(textures: &Textures) -> Vec<Cube> {
+    let mut objects = Vec::new();
+
+    objects.push(Cube {
+        min: Vec3::new(7.0, 2.0, 0.0),
+        max: Vec3::new(8.0, 3.0, 1.0),
+        material: textures.shroomlight_material.clone(),
+    });
+
+    objects.push(Cube {
+        min: Vec3::new(0.0, 2.0, 0.0),
+        max: Vec3::new(1.0, 3.0, 1.0),
+        material: textures.shroomlight_material.clone(),
+    });
+
+    objects
+}
 fn main() {
     let window_width = 800;
     let window_height = 600;
@@ -344,6 +432,10 @@ fn main() {
     objects.append(&mut dirt);
 
     objects.append(&mut create_nether_portal(&textures));
+    objects.append(&mut create_player_tools(&textures));
+    objects.append(&mut create_cactus(&textures));
+    objects.append(&mut create_tree(&textures));
+    objects.append(&mut create_shroomlights(&textures));
 
     // objects.append(&mut create_player_tools(&textures));
 
