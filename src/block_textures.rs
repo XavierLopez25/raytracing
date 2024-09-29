@@ -13,6 +13,7 @@ pub struct Textures {
     pub sand_material: Material,
     pub shroomlight_material: Material,
     pub smoker_material: Material,
+    pub crafting_table_material: Material,
 }
 
 impl Textures {
@@ -45,6 +46,10 @@ impl Textures {
         let oak_planks_material =
             Material::new_with_texture(1.0, [0.95, 0.1, 0.0, 0.0], 1.3, oak_planks_texture);
 
+        let crafting_table_texture = Arc::new(Texture::new("assets/crafting_table.png"));
+        let crafting_table_material =
+            Material::new_with_texture(1.0, [0.95, 0.1, 0.0, 0.0], 1.3, crafting_table_texture);
+
         let sand_texture = Arc::new(Texture::new("assets/sand.png"));
         let sand_material =
             Material::new_with_texture(1.0, [0.95, 0.90, 0.10, 0.0], 0.0, sand_texture);
@@ -68,6 +73,7 @@ impl Textures {
             sand_material,
             shroomlight_material,
             smoker_material,
+            crafting_table_material,
         }
     }
 }
