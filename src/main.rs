@@ -102,6 +102,12 @@ fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Cube]) -> f32 {
         .unwrap_or(0.0)
 }
 
+fn fresnel_schlick(cos_theta: f32, ior: f32) -> f32 {
+    let r0 = (1.0 - ior) / (1.0 + ior);
+    let r0 = r0 * r0;
+    r0 + (1.0 - r0) * (1.0 - cos_theta).powi(5)
+}
+
 pub fn cast_ray(
     ray_origin: &Vec3,
     ray_direction: &Vec3,
@@ -131,8 +137,8 @@ pub fn cast_ray(
 
     let light_dir = (light.position - intersect.point).normalize();
     let view_dir = (ray_origin - intersect.point).normalize();
-
     let reflect_dir = reflect(&-light_dir, &intersect.normal).normalize();
+    let cos_theta = -ray_direction.dot(&intersect.normal).max(-1.0).min(1.0);
 
     let shadow_intensity = cast_shadow(&intersect, light, objects);
     let light_intensity = light.intensity * (1.0 - shadow_intensity);
@@ -151,31 +157,28 @@ pub fn cast_ray(
     let specular =
         light.color * intersect.material.albedo[1] * specular_intensity * light_intensity;
 
-    let mut reflect_color = Color::black();
-    let reflectivity = intersect.material.albedo[2];
+    let fresnel_effect = fresnel_schlick(cos_theta.abs(), intersect.material.refractive_index);
+    let reflect_color = if intersect.material.albedo[2] > 0.0 {
+        let reflect_dir = reflect(ray_direction, &intersect.normal).normalize();
+        let reflect_origin = offset_point(&intersect, ray_direction);
+        cast_ray(&reflect_origin, &reflect_dir, objects, light, depth + 1) * fresnel_effect
+    } else {
+        Color::black()
+    };
 
-    if reflectivity > 0.0 {
-        let reflect_dir = reflect(&ray_direction, &intersect.normal).normalize();
-        let reflect_origin = offset_point(&intersect, &ray_direction);
-        reflect_color = cast_ray(&reflect_origin, &reflect_dir, objects, light, depth + 1)
-    }
-
-    let mut refract_color = Color::black();
-    let transparency = intersect.material.albedo[3];
-
-    if transparency > 0.0 {
+    let refract_color = if intersect.material.albedo[3] > 0.0 {
         let refract_dir = refract(
-            &ray_direction,
+            ray_direction,
             &intersect.normal,
             intersect.material.refractive_index,
         );
         let refract_origin = offset_point(&intersect, &refract_dir);
-        refract_color = cast_ray(&refract_origin, &refract_dir, objects, light, depth + 1);
-    }
+        cast_ray(&refract_origin, &refract_dir, objects, light, depth + 1) * (1.0 - fresnel_effect)
+    } else {
+        Color::black()
+    };
 
-    (diffuse + specular) * (1.0 - reflectivity - transparency)
-        + (reflect_color * reflectivity)
-        + (refract_color * transparency)
+    diffuse + specular + reflect_color + refract_color
 }
 
 pub fn render(framebuffer: &mut Framebuffer, objects: &[Cube], camera: &Camera, light: &Light) {
