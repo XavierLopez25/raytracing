@@ -211,6 +211,99 @@ pub fn render(framebuffer: &mut Framebuffer, objects: &[Cube], camera: &Camera, 
     }
 }
 
+fn generate_grid(
+    width: usize,
+    height: usize,
+    start_x: f32,
+    start_y: f32,
+    start_z: f32,
+    material: Material,
+) -> Vec<Cube> {
+    let mut objects = Vec::new();
+    for y in 0..height {
+        for x in 0..width {
+            objects.push(Cube {
+                min: Vec3::new(start_x + x as f32, start_y, start_z + y as f32),
+                max: Vec3::new(
+                    start_x + (x + 1) as f32,
+                    start_y + 1.0,
+                    start_z + (y + 1) as f32,
+                ),
+                material: material.clone(),
+            });
+        }
+    }
+    objects
+}
+
+fn create_nether_portal(textures: &Textures) -> Vec<Cube> {
+    let mut objects = Vec::new();
+
+    objects.push(Cube {
+        min: Vec3::new(3.0, 2.0, 6.0),
+        max: Vec3::new(4.0, 3.0, 7.0),
+        material: textures.oak_planks_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(4.0, 2.0, 6.0),
+        max: Vec3::new(5.0, 3.0, 7.0),
+        material: textures.obsidian_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(5.0, 2.0, 6.0),
+        max: Vec3::new(6.0, 3.0, 7.0),
+        material: textures.obsidian_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(6.0, 2.0, 6.0),
+        max: Vec3::new(7.0, 3.0, 7.0),
+        material: textures.oak_planks_material.clone(),
+    });
+
+    objects.push(Cube {
+        min: Vec3::new(3.0, 3.0, 6.0),
+        max: Vec3::new(4.0, 4.0, 7.0),
+        material: textures.obsidian_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(6.0, 3.0, 6.0),
+        max: Vec3::new(7.0, 4.0, 7.0),
+        material: textures.obsidian_material.clone(),
+    });
+
+    objects.push(Cube {
+        min: Vec3::new(3.0, 4.0, 6.0),
+        max: Vec3::new(4.0, 5.0, 7.0),
+        material: textures.obsidian_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(6.0, 4.0, 6.0),
+        max: Vec3::new(7.0, 5.0, 7.0),
+        material: textures.obsidian_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(6.0, 5.0, 6.0),
+        max: Vec3::new(7.0, 6.0, 7.0),
+        material: textures.oak_planks_material.clone(),
+    });
+    objects.push(Cube {
+        min: Vec3::new(5.0, 5.0, 6.0),
+        max: Vec3::new(6.0, 6.0, 7.0),
+        material: textures.obsidian_material.clone(),
+    });
+
+    objects
+}
+
+fn create_player_tools(textures: &Textures) -> Vec<Cube> {
+    let mut objects = Vec::new();
+
+    let wood_row = generate_grid(1, 7, 7.0, 1.0, 0.0, textures.oak_planks_material.clone());
+    objects.extend(wood_row);
+
+    objects
+}
+
 fn main() {
     let window_width = 800;
     let window_height = 600;
@@ -235,9 +328,6 @@ fn main() {
 
     framebuffer.set_background_color(0x333355);
 
-    let grass_texture = Arc::new(Texture::new("assets\\grass_signed.png"));
-    let grass = Material::new_with_texture(1.0, [1.0, 0.05, 0.0, 0.0], 0.0, grass_texture);
-
     let ivory: Material = Material::new(Color::new(100, 100, 80), 50.0, [0.6, 0.3, 0.6, 0.0], 0.0);
 
     let glass = Material::new(
@@ -249,17 +339,14 @@ fn main() {
 
     let textures = Textures::new();
 
-    // Generate a 6x6 grid of grass cubes
-    let mut objects = Vec::new();
-    for i in 0..6 {
-        for j in 0..6 {
-            objects.push(Cube {
-                min: Vec3::new(i as f32, 0.0, j as f32),
-                max: Vec3::new(i as f32 + 1.0, 1.0, j as f32 + 1.0),
-                material: textures.grass_material.clone(),
-            });
-        }
-    }
+    let mut objects = generate_grid(7, 7, 0.0, 1.0, 0.0, textures.grass_material.clone());
+    let mut dirt = generate_grid(7, 7, 0.0, 0.0, 0.0, textures.dirt_material.clone());
+    objects.append(&mut dirt);
+
+    objects.append(&mut create_nether_portal(&textures));
+
+    // objects.append(&mut create_player_tools(&textures));
+
     // Configuración de la cámara
     let mut camera = Camera::new(
         Vec3::new(-5.0, 5.0, -10.0), // Posición de la cámara ajustada
