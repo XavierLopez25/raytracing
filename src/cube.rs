@@ -21,9 +21,6 @@ impl Cube {
         let column_width = img_width / num_columns;
         let row_height = img_height / num_rows;
 
-        let mut u = 0.0;
-        let mut v = 0.0;
-
         let (u, v) = if normal.x > 0.0 {
             // Cara derecha (Face 6)
             (
