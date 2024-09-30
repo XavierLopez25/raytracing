@@ -25,7 +25,7 @@ impl Textures {
 
         let obsidian_texture = Arc::new(Texture::new("assets/obsidian.png"));
         let obsidian_material =
-            Material::new_with_texture(0.01, [0.45, 0.01, 0.01, 0.0], 1.5, obsidian_texture);
+            Material::new_with_texture(0.2, [0.45, 0.01, 0.0, 0.0], 0.2, obsidian_texture);
 
         let bookshelf_texture = Arc::new(Texture::new("assets/bookshelf.png"));
         let bookshelf_material =
@@ -33,7 +33,7 @@ impl Textures {
 
         let cactus_texture = Arc::new(Texture::new("assets/cactus.png"));
         let cactus_material =
-            Material::new_with_texture(0.01, [0.45, 0.01, 0.01, 0.0], 1.5, cactus_texture);
+            Material::new_with_texture(1.0, [0.50, 0.01, 0.0, 0.0], 1.5, cactus_texture);
 
         let dirt_texture = Arc::new(Texture::new("assets/dirt.png"));
         let dirt_material =
@@ -52,12 +52,8 @@ impl Textures {
             Material::new_with_texture(1.0, [0.95, 0.1, 0.0, 0.0], 1.3, crafting_table_texture);
 
         let sand_texture = Arc::new(Texture::new("assets/sand.png"));
-        let sand_material = Material::new_with_texture(
-            1.0,                   // Escala de textura
-            [0.90, 0.2, 0.0, 0.0], // Albedo ajustado para un color más natural de arena
-            0.0,
-            sand_texture,
-        );
+        let sand_material =
+            Material::new_with_texture(1.0, [0.90, 0.2, 0.0, 0.0], 0.0, sand_texture);
 
         let shroomlight_texture = Arc::new(Texture::new("assets/shroomlight.png"));
         let shroomlight_material =
@@ -67,7 +63,7 @@ impl Textures {
         let smoker_material =
             Material::new_with_texture(1.0, [0.95, 0.1, 0.0, 0.0], 1.2, smoker_texture);
 
-        let skybox_texture = Arc::new(Texture::new("assets/skybox.png")); // Asume que tienes una imagen skybox.png
+        let skybox_texture = Arc::new(Texture::new("assets/skybox.png"));
 
         Self {
             grass_material,

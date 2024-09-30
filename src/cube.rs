@@ -62,7 +62,6 @@ impl Cube {
             ) // Fila 3
         };
 
-        // Convertir coordenadas de píxeles a coordenadas UV dividiendo por las dimensiones de la imagen
         (u / img_width, 1.0 - v / img_height)
     }
 }

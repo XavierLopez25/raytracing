@@ -9,9 +9,6 @@ use std::f32::INFINITY;
 mod framebuffer;
 use framebuffer::Framebuffer;
 
-mod sphere;
-use sphere::Sphere;
-
 mod ray_intersect;
 use ray_intersect::{Intersect, RayIntersect};
 
@@ -28,7 +25,6 @@ mod light;
 use light::Light;
 
 mod texture;
-use std::sync::Arc;
 use texture::Texture;
 
 mod cube;
@@ -40,9 +36,10 @@ mod block_textures;
 use block_textures::Textures;
 
 const BIAS: f32 = 0.001;
-const SKYBOX_COLOR: Color = Color::new(69, 142, 228);
+const AMBIENT_LIGHT_COLOR: Color = Color::new(25, 25, 25);
+const AMBIENT_INTENSITY: f32 = 0.3;
 
-fn offset_point(intersect: &Intersect, direction: &Vec3) -> Vec3 {
+fn offset_point(intersect: &Intersect, _direction: &Vec3) -> Vec3 {
     let offset = intersect.normal * BIAS;
     intersect.point + offset
 }
@@ -113,11 +110,9 @@ fn get_skybox_color(direction: &Vec3, skybox_texture: &Texture) -> Color {
     let u = 0.5 + normalized_dir.x.atan2(normalized_dir.z) / (2.0 * PI);
     let v = 0.5 - (normalized_dir.y.asin() / PI);
 
-    // Asegurarse de que u y v están dentro del rango [0, 1]
     let u = u.fract();
     let v = v.fract();
 
-    // Convertir u y v en índices de píxeles dentro de la textura
     let tex_width = skybox_texture.width() as f32;
     let tex_height = skybox_texture.height() as f32;
     let tex_x = (u * tex_width).floor() as usize;
@@ -153,6 +148,8 @@ pub fn cast_ray(
     if !intersect.is_intersecting {
         return get_skybox_color(ray_direction, &textures.skybox_texture);
     }
+
+    let ambient_light = AMBIENT_LIGHT_COLOR * AMBIENT_INTENSITY;
 
     let light_dir = (light.position - intersect.point).normalize();
     let view_dir = (ray_origin - intersect.point).normalize();
@@ -211,7 +208,7 @@ pub fn cast_ray(
         Color::black()
     };
 
-    diffuse + specular + reflect_color + refract_color
+    ambient_light + diffuse + specular + reflect_color + refract_color
 }
 
 pub fn render(
