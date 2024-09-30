@@ -21,7 +21,6 @@ impl Texture {
         let width = img.width() as usize;
         let height = img.height() as usize;
 
-        // Verificar que la imagen no tenga dimensiones nulas
         assert!(
             width > 0 && height > 0,
             "Image is empty or not loaded correctly"

@@ -3,9 +3,9 @@ use crate::ray_intersect::{Intersect, RayIntersect};
 use nalgebra_glm::Vec3;
 
 pub struct Cube {
-    pub min: Vec3,          // La esquina mínima del cubo
-    pub max: Vec3,          // La esquina máxima del cubo
-    pub material: Material, // Material del cubo (incluyendo albedo)
+    pub min: Vec3,
+    pub max: Vec3,
+    pub material: Material,
 }
 
 impl Cube {
@@ -68,7 +68,6 @@ impl Cube {
 
 impl RayIntersect for Cube {
     fn ray_intersect(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect {
-        // Calcular el inverso de cada componente del vector de dirección
         let inv_dir = Vec3::new(
             1.0 / ray_direction[0],
             1.0 / ray_direction[1],

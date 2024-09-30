@@ -56,12 +56,10 @@ fn refract(incident: &Vec3, normal: &Vec3, eta_t: f32) -> Vec3 {
     let n_normal: Vec3;
 
     if cosi < 0.0 {
-        // Entering
         n_cosi = -cosi;
         eta = 1.0 / eta_t;
         n_normal = -normal;
     } else {
-        // Leaving
         n_cosi = cosi;
         eta = eta_t;
         n_normal = *normal;
@@ -70,7 +68,6 @@ fn refract(incident: &Vec3, normal: &Vec3, eta_t: f32) -> Vec3 {
     let k = 1.0 - eta * eta * (1.0 - n_cosi * n_cosi);
 
     if k > 0.0 {
-        // Total internal reflection
         reflect(incident, &n_normal)
     } else {
         incident * eta + (eta * n_cosi - k.sqrt()) * n_normal
@@ -82,21 +79,17 @@ fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Cube]) -> f32 {
     let light_distance = (light.position - intersect.point).magnitude();
     let shadow_ray_origin = offset_point(intersect, &light_dir);
 
-    objects
-        .iter()
-        .find_map(|object| {
-            let shadow_intersect = object.ray_intersect(&shadow_ray_origin, &light_dir);
-            if shadow_intersect.is_intersecting && shadow_intersect.distance < light_distance {
-                Some(
-                    0.5 - (shadow_intersect.distance / light_distance)
-                        .powf(2.0)
-                        .min(1.0),
-                )
-            } else {
-                None
-            }
-        })
-        .unwrap_or(0.0)
+    for object in objects {
+        let shadow_intersect = object.ray_intersect(&shadow_ray_origin, &light_dir);
+        if shadow_intersect.is_intersecting && shadow_intersect.distance < light_distance {
+            return 0.5
+                - (shadow_intersect.distance / light_distance)
+                    .powf(2.0)
+                    .min(1.0);
+        }
+    }
+
+    0.0
 }
 
 fn fresnel_schlick(cos_theta: f32, ior: f32) -> f32 {
@@ -125,7 +118,7 @@ pub fn cast_ray(
     ray_origin: &Vec3,
     ray_direction: &Vec3,
     objects: &[Cube],
-    light: &Light,
+    lights: &[Light],
     depth: u32,
     textures: &Textures,
 ) -> Color {
@@ -138,7 +131,6 @@ pub fn cast_ray(
 
     for object in objects {
         let i = object.ray_intersect(ray_origin, ray_direction);
-
         if i.is_intersecting && i.distance < zbuffer {
             zbuffer = i.distance;
             intersect = i;
@@ -150,16 +142,51 @@ pub fn cast_ray(
     }
 
     let ambient_light = AMBIENT_LIGHT_COLOR * AMBIENT_INTENSITY;
+    let mut color = ambient_light;
+
+    if intersect.material.emission.r > 0
+        || intersect.material.emission.g > 0
+        || intersect.material.emission.b > 0
+    {
+        color = color + intersect.material.emission;
+    }
+
+    for light in lights {
+        let light_effect = calculate_lighting(
+            &intersect,
+            light,
+            ray_direction,
+            objects,
+            depth,
+            textures,
+            lights,
+        );
+
+        color = color + light_effect;
+    }
+
+    color
+}
+fn calculate_lighting(
+    intersect: &Intersect,
+    light: &Light,
+    ray_direction: &Vec3,
+    objects: &[Cube],
+    depth: u32,
+    textures: &Textures,
+    lights: &[Light],
+) -> Color {
+    let mut total_light = Color::new(0, 0, 0);
 
     let light_dir = (light.position - intersect.point).normalize();
-    let view_dir = (ray_origin - intersect.point).normalize();
-    let reflect_dir = reflect(&-light_dir, &intersect.normal).normalize();
+    let view_dir = (-ray_direction).normalize();
+    let reflect_dir = reflect(ray_direction, &intersect.normal).normalize();
     let cos_theta = -ray_direction.dot(&intersect.normal).max(-1.0).min(1.0);
 
-    let shadow_intensity = cast_shadow(&intersect, light, objects);
+    let shadow_intensity = cast_shadow(intersect, light, objects);
     let light_intensity = light.intensity * (1.0 - shadow_intensity);
 
-    let diffuse_intensity = intersect.normal.dot(&light_dir).max(0.0).min(1.0);
+    let diffuse_intensity = intersect.normal.dot(&light_dir).max(0.0);
     let diffuse_color = intersect
         .material
         .get_diffuse_color(intersect.u, intersect.v);
@@ -173,15 +200,16 @@ pub fn cast_ray(
     let specular =
         light.color * intersect.material.albedo[1] * specular_intensity * light_intensity;
 
+    // Efecto Fresnel y reflexión
     let fresnel_effect = fresnel_schlick(cos_theta.abs(), intersect.material.refractive_index);
     let reflect_color = if intersect.material.albedo[2] > 0.0 {
         let reflect_dir = reflect(ray_direction, &intersect.normal).normalize();
-        let reflect_origin = offset_point(&intersect, ray_direction);
+        let reflect_origin = offset_point(intersect, &reflect_dir);
         cast_ray(
             &reflect_origin,
             &reflect_dir,
             objects,
-            light,
+            lights,
             depth + 1,
             textures,
         ) * fresnel_effect
@@ -195,12 +223,12 @@ pub fn cast_ray(
             &intersect.normal,
             intersect.material.refractive_index,
         );
-        let refract_origin = offset_point(&intersect, &refract_dir);
+        let refract_origin = offset_point(intersect, &refract_dir);
         cast_ray(
             &refract_origin,
             &refract_dir,
             objects,
-            light,
+            lights,
             depth + 1,
             textures,
         ) * (1.0 - fresnel_effect)
@@ -208,14 +236,25 @@ pub fn cast_ray(
         Color::black()
     };
 
-    ambient_light + diffuse + specular + reflect_color + refract_color
+    total_light = total_light + diffuse + specular;
+
+    if intersect.material.emission.r > 0
+        || intersect.material.emission.g > 0
+        || intersect.material.emission.b > 0
+    {
+        total_light = total_light + intersect.material.emission;
+    }
+
+    total_light = total_light + reflect_color + refract_color;
+
+    total_light
 }
 
 pub fn render(
     framebuffer: &mut Framebuffer,
     objects: &[Cube],
     camera: &Camera,
-    light: &Light,
+    lights: &[Light],
     textures: &Textures,
 ) {
     let width = framebuffer.width as f32;
@@ -228,7 +267,6 @@ pub fn render(
         .flat_map(|y| (0..framebuffer.width).map(move |x| (x, y)))
         .collect();
 
-    // Calcula los colores de los píxeles en paralelo
     let pixel_colors: Vec<(usize, usize, u32)> = pixels
         .par_iter()
         .map(|&(x, y)| {
@@ -238,13 +276,18 @@ pub fn render(
             let screen_y = screen_y * perspective_scale;
             let ray_direction = Vec3::new(screen_x, screen_y, -1.0).normalize();
             let rotated_direction = camera.basis_change(&ray_direction);
-            let pixel_color =
-                cast_ray(&camera.eye, &rotated_direction, objects, light, 0, textures);
+            let pixel_color = cast_ray(
+                &camera.eye,
+                &rotated_direction,
+                objects,
+                lights,
+                0,
+                textures,
+            );
             (x, y, pixel_color.to_hex())
         })
         .collect();
 
-    // Aplica los colores de los píxeles en una operación secuencial
     for (x, y, color) in pixel_colors {
         framebuffer.set_current_color(color);
         framebuffer.point(x, y);
@@ -419,8 +462,8 @@ fn create_shroomlights(textures: &Textures) -> Vec<Cube> {
     let mut objects = Vec::new();
 
     objects.push(Cube {
-        min: Vec3::new(7.0, 2.0, 0.0),
-        max: Vec3::new(8.0, 3.0, 1.0),
+        min: Vec3::new(6.0, 2.0, 0.0),
+        max: Vec3::new(7.0, 3.0, 1.0),
         material: textures.shroomlight_material.clone(),
     });
 
@@ -431,6 +474,25 @@ fn create_shroomlights(textures: &Textures) -> Vec<Cube> {
     });
 
     objects
+}
+
+fn create_shroomlight_lights(_textures: &Textures) -> Vec<Light> {
+    let mut lights = Vec::new();
+    let emission_color = Color::new(240, 197, 101);
+    let intensity = 1.5;
+
+    lights.push(Light::new(
+        Vec3::new(6.5, 2.5, 0.5),
+        emission_color,
+        intensity,
+    ));
+    lights.push(Light::new(
+        Vec3::new(0.5, 2.5, 0.5),
+        emission_color,
+        intensity,
+    ));
+
+    lights
 }
 fn main() {
     let window_width = 800;
@@ -456,15 +518,6 @@ fn main() {
 
     framebuffer.set_background_color(0x333355);
 
-    let ivory: Material = Material::new(Color::new(100, 100, 80), 50.0, [0.6, 0.3, 0.6, 0.0], 0.0);
-
-    let glass = Material::new(
-        Color::new(255, 255, 255),
-        1425.0,
-        [0.0, 10.0, 0.5, 0.5],
-        0.3,
-    );
-
     let textures = Textures::new();
 
     let mut objects = generate_grid(7, 7, 0.0, 1.0, 0.0, textures.grass_material.clone());
@@ -477,28 +530,28 @@ fn main() {
     objects.append(&mut create_tree(&textures));
     objects.append(&mut create_shroomlights(&textures));
 
-    // objects.append(&mut create_player_tools(&textures));
-
-    // Configuración de la cámara
     let mut camera = Camera::new(
-        Vec3::new(-5.0, 5.0, -10.0), // Posición de la cámara ajustada
-        Vec3::new(0.0, 0.0, 0.0),    // Punto hacia el que mira la cámara
-        Vec3::new(0.0, 1.0, 0.0),    // Vector "up" de la cámara
+        Vec3::new(-5.0, 5.0, -10.0),
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
     );
 
-    let light = Light::new(Vec3::new(-5.0, 10.0, -10.0), Color::new(255, 255, 255), 1.0);
+    let mut lights = vec![Light::new(
+        Vec3::new(-5.0, 10.0, -10.0),
+        Color::new(255, 255, 255),
+        0.5,
+    )];
+    lights.extend(create_shroomlight_lights(&textures));
 
     let rotation_speed = PI / 50.0;
     let movement_speed = 0.1;
     let zoom_speed = 0.5;
 
     while window.is_open() {
-        // listen to inputs
         if window.is_key_down(Key::Escape) {
             break;
         }
 
-        //  camera orbit controls
         if window.is_key_down(Key::Left) {
             camera.orbit(rotation_speed, 0.0);
         }
@@ -512,7 +565,6 @@ fn main() {
             camera.orbit(0.0, rotation_speed);
         }
 
-        // Camera movement controls
         let mut movement = Vec3::new(0.0, 0.0, 0.0);
         if window.is_key_down(Key::A) {
             movement.x -= movement_speed;
@@ -530,7 +582,6 @@ fn main() {
             camera.move_center(movement);
         }
 
-        // Camera zoom controls
         if window.is_key_down(Key::Up) {
             camera.zoom(zoom_speed);
         }
@@ -539,7 +590,7 @@ fn main() {
         }
 
         framebuffer.clear();
-        render(&mut framebuffer, &objects, &mut camera, &light, &textures);
+        render(&mut framebuffer, &objects, &mut camera, &lights, &textures);
 
         window
             .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)
