@@ -5,7 +5,7 @@ https://github.com/user-attachments/assets/2f6a5260-f897-4b63-933d-38676d5d0607
 ---
 ## Descripción
 
-Este programa es un **raytracer** que genera una escena de estilo *Minecraft* utilizando cubos texturizados y varias fuentes de luz. La escena incluye varios objetos como árboles, herramientas del jugador, bloques de nether, cactus, shroomlights y un portal. Además, el raytracer soporta múltiples efectos de iluminación, materiales personalizados con texturas, reflexión, refracción y sombras, además de incluir un **skybox** para dar profundidad a la escena. 
+Este programa es un **raytracer** que genera una escena de estilo *Minecraft* utilizando cubos texturizados y varias fuentes de luz. La escena incluye varios objetos como árboles, herramientas del jugador, cactus, shroomlights y un portal (el cual está imcompleto ya que el jugador de este Skyblock colocó mal la obsidiana para su portal). Además, el raytracer soporta múltiples efectos de iluminación, materiales personalizados con texturas, reflexión, refracción y sombras, además de incluir un **skybox** para dar profundidad a la escena. 
 
 El programa está escrito en **Rust** y utiliza la librería **minifb** para la visualización en una ventana interactiva. Asimismo, implementa la paralelización del cálculo de rayos usando **Rayon**, lo cual mejora significativamente el rendimiento.
 
